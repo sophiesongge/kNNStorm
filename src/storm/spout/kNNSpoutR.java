@@ -26,8 +26,9 @@ public class kNNSpoutR extends BaseRichSpout{
 	private static int k;//the number of nearest neighbors
 	private static int d;//dimension
 	private int numberOfPartition;
-	BufferedReader reader;
-	String setID;
+	private BufferedReader reader;
+	private String setID;
+	private ArrayList tempList;
 
 	
 	public kNNSpoutR(int k, int d, int p, String setID){
@@ -44,41 +45,12 @@ public class kNNSpoutR extends BaseRichSpout{
 		this._collector = collector;
 		this.reader = kNNTopology.readerR;
 		
-	}
-
-	public void nextTuple() {
-		Utils.sleep(200);
-		generateTuple();
-	}
-	
-	
-	public void generateTuple(){
+		this.tempList = new ArrayList();
 		
 		try{
 			String tempsString = null;
-			while((tempsString = reader.readLine())!=null){
-				String parts[] = tempsString.split(" +");
-				int id = Integer.parseInt(parts[0]);
-				float[] coord = new float[d];
-				for(int ii=0; ii<d; ii++){
-					try{
-						coord[ii] = Float.valueOf(parts[1+ii]);
-					}catch(NumberFormatException ex){
-						//Do Nothing
-					}
-				}
-				
-				Element er = new Element(id, coord);
-				er.setId(id);
-				er.setCoord(coord);
-				
-				int partId = r.nextInt(numberOfPartition);
-				int groupId = 0;
-				
-				for(int i=0; i<numberOfPartition; i++){
-					groupId = partId * numberOfPartition + i;
-					_collector.emit(new Values(er, groupId, setID));
-				}
+			while((tempsString = this.reader.readLine())!=null){
+				tempList.add(tempsString);
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -87,8 +59,43 @@ public class kNNSpoutR extends BaseRichSpout{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}finally{
-			System.out.println("Job is finished of this spout");
+			
 		}
+	}
+
+	public void nextTuple() {
+		Utils.sleep(1000);
+		generateTuple();
+	}
+	
+	
+	public void generateTuple(){
+
+		int index = r.nextInt(200);
+		
+		final String parts[] = ((String) this.tempList.get(index)).split(" +");
+		int id = Integer.parseInt(parts[0]);
+		float[] coord = new float[d];
+		for(int ii=0; ii<d; ii++){
+			try{
+				coord[ii] = Float.valueOf(parts[1+ii]);
+			}catch(NumberFormatException ex){
+				//Do Nothing
+			}
+		}
+		
+		Element er = new Element(id, coord);
+		er.setId(id);
+		er.setCoord(coord);
+		
+		int partId = r.nextInt(numberOfPartition);
+		int groupId = 0;
+		
+		for(int i=0; i<numberOfPartition; i++){
+			groupId = partId * numberOfPartition + i;
+			_collector.emit(new Values(er, groupId, setID));
+		}
+		
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {

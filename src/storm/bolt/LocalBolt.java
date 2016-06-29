@@ -14,6 +14,7 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
+import backtype.storm.utils.Utils;
 import kNN.Element;
 import kNN.ListElemS;
 import kNN.ListResultR;
@@ -29,7 +30,7 @@ public class LocalBolt implements IRichBolt{
 	private static int k;
 	private static int d;
 	
-	private int GenerationSize=50;
+	private int GenerationSize=30;
 	private int currentGenerationSize=0;
 	
 	public LocalBolt(int k, int d){
@@ -45,10 +46,28 @@ public class LocalBolt implements IRichBolt{
 	}
 
 	public void execute(Tuple input) {
+		Utils.sleep(1000);
 		// TODO Auto-generated method stub
 		String setID = input.getStringByField("setID");
 		Element elem = (Element) input.getValueByField("elem");
-		if(setID.equals("R")){
+		
+		if(setID.equals("S")){
+			S.add(elem);
+			currentGenerationSize++;
+		}else{
+			ListResultR topK1R = topKForOneR(elem, S);
+			int id = topK1R.getId();
+			collector.emit(new Values(String.valueOf(id), topK1R.getTopNeighbor()));
+		}
+		
+		if(currentGenerationSize == GenerationSize){
+			currentGenerationSize = 0;
+			S.clear();
+		}
+		
+		
+		
+		/*if(setID.equals("R")){
 			R.add(elem);
 			currentGenerationSize++;
 		}else{
@@ -56,15 +75,17 @@ public class LocalBolt implements IRichBolt{
 		}
 		
 		if(currentGenerationSize == GenerationSize){
-			for(int i=0; i<R.size(); i++){
-				ListResultR topK1R = topKForOneR(R.get(i), S);
+			ArrayList<Element> tempR = R;
+			ArrayList<Element> tempS = S;
+			currentGenerationSize = 0;
+			R.clear();
+			S.clear();
+			for(int i=0; i<tempR.size(); i++){
+				ListResultR topK1R = topKForOneR((Element) tempR.get(i), tempS);
 				int id = topK1R.getId();
 				collector.emit(new Values(String.valueOf(id), topK1R.getTopNeighbor()));
 			}
-		}
-		currentGenerationSize = 0;
-		R.clear();
-		S.clear();
+		}*/
 	}
 
 	

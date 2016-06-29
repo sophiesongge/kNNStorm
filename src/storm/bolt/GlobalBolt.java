@@ -19,7 +19,7 @@ public class GlobalBolt implements IRichBolt{
 	private OutputCollector collector;
 	private static Map result;
 	private int k;
-	private int GenerationSize=20;
+	private int GenerationSize=30;
 
 	public GlobalBolt(int k){
 		this.k = k;
@@ -33,6 +33,9 @@ public class GlobalBolt implements IRichBolt{
 
 	public void execute(Tuple input) {
 		// TODO Auto-generated method stub
+		if(result.size()>GenerationSize){
+			result.clear();
+		}
 		String rid = input.getStringByField("rid");
 		ArrayList<ListElemS> localneighbor = (ArrayList<ListElemS>) input.getValueByField("localneighbor");
 		
@@ -57,7 +60,7 @@ public class GlobalBolt implements IRichBolt{
 			}
 			result.put(rid, global);
 		}
-		
+		collector.emit(new Values(rid, result.get(rid)));
 	}
 
 	public void cleanup() {

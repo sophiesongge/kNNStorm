@@ -50,9 +50,9 @@ public class kNNTopology implements Serializable {
 				}catch(IOException e2){
 					//Do nothing
 				}
-				}
 			}
 		}
+	}
 	
 	
 	public static void stormCall(String[] args) throws InterruptedException
@@ -61,10 +61,6 @@ public class kNNTopology implements Serializable {
 		config.setDebug(true);
 		
 		TopologyBuilder builder = new TopologyBuilder();
-		
-		//builder.setSpout("getR", new kNNSpout(5, 2, 3, readerR, "R"), 1);
-		
-		//builder.setSpout("getS", new kNNSpout(5, 2, 3, readerS, "S"), 1);
 		
 		builder.setSpout("getR", new kNNSpoutR(5, 2, 3, "R"), 1);
 		
@@ -78,7 +74,7 @@ public class kNNTopology implements Serializable {
 		
 		cluster.submitTopology("kNNStorm", config, builder.createTopology());
 		
-		Thread.sleep(1000);
+		Thread.sleep(10000);
 		
 		try{
 			cluster.shutdown();	
