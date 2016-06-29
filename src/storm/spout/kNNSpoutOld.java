@@ -19,7 +19,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-public class kNNSpout extends BaseRichSpout{
+public class kNNSpoutOld extends BaseRichSpout{
 	
 	SpoutOutputCollector _collector;
 	private Random r;
@@ -31,27 +31,21 @@ public class kNNSpout extends BaseRichSpout{
 	private int numberOfPartition;
 	//private int recIdOffset;
 	//private int coordOffset;
-	BufferedReader reader;
-	String setID;
-	//BufferedReader readerR;
-	//BufferedReader readerS;
+	BufferedReader readerR;
+	BufferedReader readerS;
 
 	
-	public kNNSpout(int k, int d, int p, BufferedReader reader, String setID){
+	public kNNSpoutOld(int k, int d, int p){
 		this.k = k;
 		this.d= d;
 		this.numberOfPartition = p;
 		this.r = new Random();
-		this.reader = reader;
-		this.setID = setID;
 	}
 	
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
 		
 		this._collector = collector;
-		this.reader = reader;
-		//this.reader = reader;
 		//this.readerR = kNNTopology.readerR;
 		//this.readerS = kNNTopology.readerS;
 		
@@ -66,9 +60,9 @@ public class kNNSpout extends BaseRichSpout{
 	public void generateTuple(){
 		
 		try{
-			String tempsString = null;
-			while((tempsString = reader.readLine())!=null){
-				String parts[] = tempsString.split(" +");
+			String tempsStringR = null;
+			while((tempsStringR = readerR.readLine())!=null){
+				String parts[] = tempsStringR.split(" +");
 				int id = Integer.parseInt(parts[0]);
 				float[] coord = new float[d];
 				for(int ii=0; ii<d; ii++){
@@ -91,6 +85,31 @@ public class kNNSpout extends BaseRichSpout{
 					_collector.emit(new Values(er, groupId));
 				}
 			}
+			String tempsStringS = null;
+			while((tempsStringS = readerS.readLine())!=null){
+				String parts[] = tempsStringS.split(" +");
+				int id = Integer.parseInt(parts[0]);
+				float[] coord = new float[d];
+				for(int ii=0; ii<d; ii++){
+					try{
+						coord[ii] = Float.valueOf(parts[1+ii]);
+					}catch(NumberFormatException ex){
+						//Do Nothing
+					}
+				}
+				
+				Element er = new Element(id, coord);
+				er.setId(id);
+				er.setCoord(coord);
+				
+				int partId = r.nextInt(numberOfPartition);
+				int groupId = 0;
+				
+				for(int i=0; i<numberOfPartition; i++){
+					groupId = partId + numberOfPartition * i;
+					_collector.emit(new Values(er, groupId));
+				}
+			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -104,8 +123,9 @@ public class kNNSpout extends BaseRichSpout{
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("elem", "ID", "setID"));
+		declarer.declare(new Fields("elem", "ID"));
 		
 	}
+	
 	
 }

@@ -4,13 +4,13 @@
  */
 package kNN;
 
-import kNN.ListElem;
+import kNN.ListElemS;
 
 import java.util.Comparator;
 
-public class RecordComparator implements Comparator<ListElem>{
+public class RecordComparator implements Comparator<ListElemS>{
 
-	public int compare(ListElem o1, ListElem o2) 
+	public int compare(ListElemS o1, ListElemS o2) 
 	{
 		
 		/**

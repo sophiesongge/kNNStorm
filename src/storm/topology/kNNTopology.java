@@ -5,14 +5,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 
+import storm.bolt.LocalBolt;
+import storm.bolt.GlobalBolt;
 import storm.spout.kNNSpout;
+import storm.spout.kNNSpoutR;
+import storm.spout.kNNSpoutS;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
-public class kNNTopology{
+public class kNNTopology implements Serializable {
 	public static BufferedReader readerR;
 	public static BufferedReader readerS;
 	
@@ -26,7 +31,7 @@ public class kNNTopology{
 		try{
 			readerR = new BufferedReader(new FileReader(fileR));
 			readerS = new BufferedReader(new FileReader(fileS));
-			stormCall();
+			stormCall(args);
 				
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -50,27 +55,34 @@ public class kNNTopology{
 		}
 	
 	
-	public static void stormCall() throws InterruptedException
+	public static void stormCall(String[] args) throws InterruptedException
 	{
 		Config config = new Config();
 		config.setDebug(true);
 		
 		TopologyBuilder builder = new TopologyBuilder();
 		
-		builder.setSpout("spout_getdata", new kNNSpout(3, 2, 3),2);
-
-		builder.setBolt("bolt_bloomfilter", new BoltCreatBF(),3).fieldsGrouping("spout_getdata", new Fields("Predicate"));
-
-		builder.setBolt("bolt_test", new BoltTest(),1).shuffleGrouping("spout_getdata");
+		//builder.setSpout("getR", new kNNSpout(5, 2, 3, readerR, "R"), 1);
+		
+		//builder.setSpout("getS", new kNNSpout(5, 2, 3, readerS, "S"), 1);
+		
+		builder.setSpout("getR", new kNNSpoutR(5, 2, 3, "R"), 1);
+		
+		builder.setSpout("getS", new kNNSpoutS(5, 2, 3, "S"), 1);
+		
+		builder.setBolt("local", new LocalBolt(5, 2), 9).fieldsGrouping("getR", new Fields("ID")).fieldsGrouping("getS", new Fields("ID"));
+		
+		builder.setBolt("global", new GlobalBolt(5), 3).fieldsGrouping("local", new Fields("rid"));
 
 		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("kNNStorm", config, builder.createTopology());
-		Thread.sleep(10000);
 		
-		//Sander: cluster shutdown throws IOException, but adding try/catch states that it is an Unreachable catch block for IOException.
+		cluster.submitTopology("kNNStorm", config, builder.createTopology());
+		
+		Thread.sleep(1000);
+		
 		try{
 			cluster.shutdown();	
-			throw new IOException("test");//Used as debug, otherwise we got the error saying this block couldn't generate an IOException
+			throw new IOException("test");
 		} catch(IOException e){
 			System.out.println("IOException when shutting down the cluster, continued afterwards, error message: " + e.getMessage());
 		}

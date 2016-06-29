@@ -19,30 +19,22 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-public class kNNSpout extends BaseRichSpout{
+public class kNNSpoutR extends BaseRichSpout{
 	
 	SpoutOutputCollector _collector;
 	private Random r;
-	//private FileReader fileReader;
 	private static int k;//the number of nearest neighbors
 	private static int d;//dimension
-	//static String filePathR; //the file path for data set R
-	//static String filePathS; //the file path for data set S
 	private int numberOfPartition;
-	//private int recIdOffset;
-	//private int coordOffset;
 	BufferedReader reader;
 	String setID;
-	//BufferedReader readerR;
-	//BufferedReader readerS;
 
 	
-	public kNNSpout(int k, int d, int p, BufferedReader reader, String setID){
+	public kNNSpoutR(int k, int d, int p, String setID){
 		this.k = k;
 		this.d= d;
 		this.numberOfPartition = p;
 		this.r = new Random();
-		this.reader = reader;
 		this.setID = setID;
 	}
 	
@@ -50,15 +42,12 @@ public class kNNSpout extends BaseRichSpout{
 			SpoutOutputCollector collector) {
 		
 		this._collector = collector;
-		this.reader = reader;
-		//this.reader = reader;
-		//this.readerR = kNNTopology.readerR;
-		//this.readerS = kNNTopology.readerS;
+		this.reader = kNNTopology.readerR;
 		
 	}
 
 	public void nextTuple() {
-		Utils.sleep(10);
+		Utils.sleep(200);
 		generateTuple();
 	}
 	
@@ -88,7 +77,7 @@ public class kNNSpout extends BaseRichSpout{
 				
 				for(int i=0; i<numberOfPartition; i++){
 					groupId = partId * numberOfPartition + i;
-					_collector.emit(new Values(er, groupId));
+					_collector.emit(new Values(er, groupId, setID));
 				}
 			}
 		} catch (FileNotFoundException e) {
@@ -99,7 +88,6 @@ public class kNNSpout extends BaseRichSpout{
 			e.printStackTrace();
 		}finally{
 			System.out.println("Job is finished of this spout");
-			//Utils.sleep(10000);
 		}
 	}
 
